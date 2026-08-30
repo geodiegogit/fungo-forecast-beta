@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Previsioni Funghi</title>
+    
+    <meta name="theme-color" content="#2E7D32">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2855/2855013.png">
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root {
+            --bg-color: #f4f7f6; --primary: #2E7D32; --card-bg: #ffffff;
+            --text-main: #333333; --text-light: #666666;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-main); padding-bottom: 70px; }
+
+        header { background-color: var(--primary); color: white; padding: 15px; text-align: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        header h1 { font-size: 1.3rem; }
+        .update-time { font-size: 0.8rem; font-weight: bold; margin-top: 4px; color: #e8f5e9; }
+
+        .container { padding: 15px; max-width: 600px; margin: 0 auto; }
+        .card { background: var(--card-bg); border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .section-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 12px; color: var(--primary); border-bottom: 2px solid #e0e0e0; padding-bottom: 5px; }
+
+        .meteo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .meteo-box { background: #f8faf9; padding: 10px; border-radius: 8px; text-align: center; border: 1px solid #e0e0e0; }
+        .meteo-box .valore { font-size: 1.2rem; font-weight: bold; color: var(--primary); }
+        .meteo-box .label { font-size: 0.75rem; color: var(--text-light); text-transform: uppercase; }
+
+        .zona-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
+        .zona-info h3 { font-size: 1rem; margin-bottom: 4px; }
+        .zona-stato { font-size: 0.8rem; color: var(--text-light); }
+        .progress-circle { width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.85rem; border: 1px solid #e0e0e0; }
+        
+        .btn-trovati { background: #ffecb3; border: 1px solid #ffc107; border-radius: 20px; padding: 4px 10px; font-size: 0.75rem; cursor: pointer; font-weight: bold; margin-top: 5px; display: inline-block; color: #d84315; }
+
+        .cal-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; font-size: 0.9rem; }
+        .cal-date { width: 55px; font-weight: bold; color: var(--text-light); }
+        .cal-luna { width: 25px; text-align: center; font-size: 1.1rem; }
+        .cal-icon { width: 25px; text-align: center; font-size: 1.1rem; }
+        .cal-data { flex-grow: 1; text-align: right; color: var(--text-light); font-size: 0.85rem; padding-right: 5px;}
+        .cal-diario { width: 25px; text-align: center; font-size: 1.1rem; }
+        
+        .cal-header { font-size: 0.75rem; font-weight: bold; color: var(--text-light); border-bottom: 2px solid #ddd; padding-bottom: 5px;}
+        .future-zones { display: flex; gap: 4px; justify-content: flex-end; flex-grow: 1; }
+        .z-label { width: 38px; text-align: center; }
+        .future-dot { width: 38px; height: 26px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: bold; border: 1px solid #e0e0e0;}
+        
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
+        .nav-btn { flex: 1; padding: 15px 0; text-align: center; background: none; border: none; font-size: 1rem; color: var(--text-light); font-weight: bold; }
+        .nav-btn.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
+        .chart-container { position: relative; height: 200px; width: 100%; }
+        .hidden { display: none; }
+        .cal-date.domenica { color: #d32f2f !important; font-weight: 900; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🍄 San Siro Porcini</h1>
+        <div class="update-time" id="last-update">Aggiornamento...</div>
+    </header>
+
+    <div class="container" id="tab-dashboard">
+        
+        <div class="card">
+            <h2 class="section-title">Stato Terreno & Siccità (Fino a Ieri)</h2>
+            <div id="siccita-text" style="font-size: 0.9rem; line-height: 1.4;">Caricamento...</div>
+        </div>
+
+        <div class="card hidden" id="card-senescenza" style="background: #fff3e0; border: 1px solid #ffcc80;">
+            <h2 class="section-title" style="color: #e65100; border-bottom-color: #ffb74d;">⚠️ Allerta Caldo Estremo</h2>
+            <p style="font-size: 0.85rem; margin-bottom: 10px;">L'algoritmo ha rilevato notti tropicali prolungate nello storico. Hai notato una senescenza parziale (caduta foglie ~20%) nel bosco?</p>
+            <label style="font-weight: bold; color: #d84315; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                <input type="checkbox" id="toggle-senescenza" onchange="aggiornaTutto();" style="transform: scale(1.5);">
+                Sì, applica penalità di stress vitale
+            </label>
+        </div>
+
+        <div class="card" style="background: #e8f5e9; border: 1px solid #c8e6c9;">
+            <h2 class="section-title" style="color: #1b5e20; border-bottom-color: #a5d6a7;">🧭 Il Consiglio del Fungiatt</h2>
+            <div id="consiglio-text" style="font-size: 0.95rem; line-height: 1.5; color: #2e7d32; font-style: italic;">
+                Analizzo il bosco...
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 class="section-title">Indice di Buttata Oggi (Proiezione)</h2>
+            <div id="zone-container"></div>
+        </div>
+        
+        <div class="card">
+            <h2 class="section-title">Meteo Stazione Ieri (1285m)</h2>
+            <div class="meteo-grid">
+                <div class="meteo-box"><div class="valore" id="m-tmax">--</div><div class="label">T. Max</div></div>
+                <div class="meteo-box"><div class="valore" id="m-tmin">--</div><div class="label">T. Min</div></div>
+                <div class="meteo-box"><div class="valore" id="m-pioggia">--</div><div class="label">Pioggia</div></div>
+                <div class="meteo-box"><div class="valore" id="m-vento">--</div><div class="label">Vento Max</div></div>
+            </div>
+        </div>
+        <div class="card">
+            <h2 class="section-title">Andamento Recente</h2>
+            <div class="chart-container"><canvas id="meteoChart"></canvas></div>
+        </div>
+    </div>
+
+    <div class="container hidden" id="tab-calendario">
+        <div class="card">
+            <h2 class="section-title">Proiezione a 15 Giorni</h2>
+            <p style="font-size: 0.8rem; color: #666; margin-bottom: 10px;">Calcolo matematico dinamico sulle onde di buttata.</p>
+            <div id="future-calendar"></div>
+        </div>
+        <div class="card">
+            <h2 class="section-title">Storico Dati Certi (ARPA - Ultimi 60 gg)</h2>
+            <div id="past-calendar"></div>
+        </div>
+    </div>
+
+    <div class="container hidden" id="tab-meteo">
+        <div class="card">
+            <h2 class="section-title">Meteo 4 Giorni (Open-Meteo)</h2>
+            <p style="font-size: 0.8rem; color: #666; margin-bottom: 10px;">Dati orari centrati su Betulle Sud-Est (Quota 1.222m).</p>
+            <div id="forecast-container">Caricamento previsioni in corso...</div>
+        </div>
+    </div>
+
+    <div class="bottom-nav">
+        <button class="nav-btn active" onclick="switchTab('dashboard')" id="btn-dashboard">📊 Oggi</button>
+        <button class="nav-btn" onclick="switchTab('calendario')" id="btn-calendario">📅 Heatmap</button>
+        <button class="nav-btn" onclick="switchTab('meteo')" id="btn-meteo">⛅ Meteo</button>
+    </div>
+
+    <script>
+        // --- SOSTITUISCI CON IL TUO USERNAME ---
+        const GITHUB_USERNAME = "geodiegogit"; 
+        const REPO_NAME = "fungo-forecast"; 
+        const DATA_URL = `https://raw.githubusercontent.com/${GITHUB_USERNAME}/${REPO_NAME}/main/data/previsioni.json`;
+
+        let globalData = null;
+
+        function formatDDMM(dateString) {
+            const parts = dateString.split('T')[0].split('-');
+            if(parts.length === 3) return `${parts[2]}/${parts[1]}`;
+            return dateString;
+        }
+
+        function getFaseLunare(dataStr) {
+            const date = new Date(dataStr);
+            const ciclo = 29.530588;
+            const lunaNuova = new Date('2024-01-11T11:57:00Z');
+            const giorniTrasc = (date - lunaNuova) / 86400000;
+            let fase = ((giorniTrasc % ciclo) + ciclo) % ciclo;
+            if (fase < 1.5 || fase > 28.5) return '🌑'; 
+            if (fase < 7) return '🌓'; 
+            if (fase < 13.5) return '🌔'; 
+            if (fase < 16) return '🌕'; 
+            if (fase < 21) return '🌖'; 
+            if (fase < 23.5) return '🌗'; 
+            return '🌘'; 
+        }
+
+        function getMeteoIcon(p, v, tmin) {
+            if (p > 10) return '🌧️';
+            if (p > 0) return '🌦️';
+            if (v > 25) return '💨';
+            if (tmin < 5 && p === 0) return '❄️';
+            return '☀️';
+        }
+
+        function salvaRitrovamento(zona) {
+            let diario = JSON.parse(localStorage.getItem('diario_funghi')) || {};
+            let oggi = new Date().toISOString().split('T')[0];
+            if (!diario[oggi]) diario[oggi] = [];
+            if (!diario[oggi].includes(zona)) {
+                diario[oggi].push(zona);
+                localStorage.setItem('diario_funghi', JSON.stringify(diario));
+                alert(`🍄 Ottimo! Ritrovamento in ${zona} salvato.`);
+                renderCalendars(); 
+            } else {
+                alert(`Hai già segnato un ritrovamento per ${zona} oggi!`);
+            }
+        }
+
+        async function initApp() {
+            try {
+                const response = await fetch(DATA_URL + '?t=' + new Date().getTime());
+                globalData = await response.json();
+                aggiornaTutto(); 
+                
+                const st = globalData.storico_completo.slice(-10);
+                new Chart(document.getElementById('meteoChart').getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: st.map(d => formatDDMM(d.data)),
+                        datasets: [
+                            { label: 'Pioggia', data: st.map(d => d.pioggia_mm), backgroundColor: '#2196F3', yAxisID: 'y' },
+                            { label: 'T.Max', data: st.map(d => d.t_max), borderColor: '#F44336', type: 'line', yAxisID: 'y1' }
+                        ]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { position: 'left' }, y1: { position: 'right' } } }
+                });
+
+            } catch (error) {
+                document.getElementById('siccita-text').innerHTML = "<b>Errore connessione.</b>";
+            }
+        }
+
+        function aggiornaTutto() {
+            if(!globalData) return;
+            renderDashboard();
+            renderCalendars();
+            loadOpenMeteo();
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.container').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById('tab-' + tab).classList.remove('hidden');
+            document.getElementById('btn-' + tab).classList.add('active');
+        }
+
+        function getHeatmapColor(p) {
+            const colors = {
+                0:   {bg: '#ffffff', txt: '#cccccc', border: '#eeeeee'},
+                10:  {bg: '#fffde7', txt: '#777777', border: '#fff59d'}, 
+                20:  {bg: '#fff59d', txt: '#333333', border: '#ffee58'}, 
+                30:  {bg: '#ffee58', txt: '#333333', border: '#fdd835'},
+                40:  {bg: '#ffca28', txt: '#333333', border: '#ffb300'}, 
+                50:  {bg: '#ffa726', txt: '#ffffff', border: '#fb8c00'}, 
+                60:  {bg: '#ff9800', txt: '#ffffff', border: '#f57c00'},
+                70:  {bg: '#f4511e', txt: '#ffffff', border: '#e64a19'}, 
+                80:  {bg: '#e53935', txt: '#ffffff', border: '#d32f2f'}, 
+                90:  {bg: '#c62828', txt: '#ffffff', border: '#b71c1c'},
+                100: {bg: '#b71c1c', txt: '#ffffff', border: '#7f0000'}  
+            };
+            return colors[p] || colors[0];
+        }
+
+        function renderDashboard() {
+            const data = globalData;
+            let ultimoDato = data.storico_completo[data.storico_completo.length - 1].data;
+            document.getElementById('last-update').innerText = "Dati certi ARPA aggiornati al: " + formatDDMM(ultimoDato);
+            
+            const diag = data.diagnosi_meteo;
+            let ggDaEvento = diag.giorni_da_evento !== undefined ? (diag.giorni_da_evento + 1) : null;
+            
+            document.getElementById('siccita-text').innerHTML = `
+                <strong>Stato Generale:</strong> ${diag.evento_rilevato ? 'Ciclo idrico in corso' : 'In attesa'}<br>
+                <strong>Ultimo evento piovoso:</strong> ${ggDaEvento !== null ? ggDaEvento + ' gg fa' : 'N/D'}<br>
+                <strong>Ritardo Siccità:</strong> ${diag.ritardo_siccita_applicato > 0 ? '+' + diag.ritardo_siccita_applicato + ' gg' : 'Nessuno'}<br>
+            `;
+
+            if (diag.rischio_senescenza) {
+                document.getElementById('card-senescenza').classList.remove('hidden');
+            } else {
+                document.getElementById('card-senescenza').classList.add('hidden');
+            }
+            
+            let isSenescenzaAttiva = document.getElementById('toggle-senescenza') ? document.getElementById('toggle-senescenza').checked : false;
+
+            let consiglio = "";
+            let tmin = diag.t_min_attuale;
+            let vento = diag.vento_max_attuale;
+            let rh = diag.rh_media_attuale;
+
+            if (isSenescenzaAttiva && ggDaEvento !== null) {
+                consiglio = "🍂 Il bosco è in senescenza parziale. Le betulle stanno risparmiando energia. La buttata sarà ritardata e meno intensa del solito, concentrati sulle zone più umide.";
+            } else if (ggDaEvento === null) {
+                consiglio = "Il bosco è secco e in attesa. 🍂 L'unica speranza è cercare le zone con sorgenti sotterranee (Camnasco) o aspettare la pioggia.";
+            } else if (tmin < 6) {
+                consiglio = "Fa frècc di notte! 🥶 Lascia perdere le cime alte. Stai sotto i 1000m nei boschi ben esposti al sole (Sud/Sud-Est) per trovare l'habitat giusto.";
+            } else if (vento > 25 && rh < 55) {
+                consiglio = "Attento al vento secco! 💨 Ha asciugato i versanti aperti. Cerca rifugio nell'anfiteatro dei Faggi a Ovest (Sant'Amate) che è protetto dal Favonio.";
+            } else if (ggDaEvento <= 5) {
+                consiglio = "La buttata si sta svegliando! 🌱 L'onda parte dal basso: punta tra i 700 e i 950m tra castagni e betulle, cercando i versanti baciati dal sole (Sud-Est).";
+            } else if (ggDaEvento > 5 && ggDaEvento <= 9) {
+                consiglio = "Siamo nel momento d'oro delle quote medie! 🍄 Esplora tra i 1000m e i 1300m (betulle e primi faggi). Le esposizioni Est e Sud-Est sono il top.";
+            } else if (ggDaEvento > 9 && ggDaEvento <= 14) {
+                consiglio = "L'onda sta salendo! 🌲 Le quote basse si asciugano. Spostati sui 1400-1500m nei faggi, provando anche le zone fresche a Nord-Est.";
+            } else {
+                consiglio = "Siamo a fine ciclo. I funghi superstiti li trovi in alto (sopra i 1500m), nei boschi bui o protetti dai pini (habitat del Pinophilus). 🏔️";
+            }
+            
+// --- CALCOLO DINAMICO DELL'ONDA ALTITUDINALE ---
+            if (ggDaEvento !== null && ggDaEvento >= 5 && !isSenescenzaAttiva && tmin >= 6) {
+                
+                // La formula: parte da 1440m al giorno 6 e scende di 40 metri al giorno
+                let quotaDinamica = 1440 - ((ggDaEvento - 6) * 40);
+                
+                // Mettiamo dei "paletti" fisici per non far uscire l'onda dalla tua montagna
+                if (quotaDinamica > 1550) quotaDinamica = 1550;
+                if (quotaDinamica < 700) quotaDinamica = 700;
+                
+                // Arrotondiamo ai 50 metri più vicini (es. 1200m, 1250m) per renderlo leggibile
+                let quotaArrotondata = Math.round(quotaDinamica / 50) * 50;
+                
+                // Aggiungiamo il mirino al consiglio del giorno
+                consiglio += `<br><br>🎯 <b>Il Mirino Altitudinale:</b> L'onda termica si sta muovendo. Oggi ti consiglio di tagliare il versante "in costa", mantenendoti rigorosamente intorno a quota <b>${quotaArrotondata} metri</b>.`;
+            }
+ 
+            document.getElementById('consiglio-text').innerHTML = consiglio;
+
+            const zc = document.getElementById('zone-container');
+            zc.innerHTML = '';
+            
+            data.zone.forEach(z => {
+                let finalProj = 0;
+                let distDalDatoCerto = 1; 
+                
+                if (z.onde && z.onde.length > 0) {
+                    z.onde.forEach(onda => {
+                        let ritardoAggiuntivo = (isSenescenzaAttiva && z.zona !== "Camnasco") ? 4 : 0;
+                        let dToP = (distDalDatoCerto - (onda.giorni_mancanti_da_ieri + ritardoAggiuntivo));
+                        
+                        let picco = onda.indice_picco || 0;
+                        if (isSenescenzaAttiva && z.zona !== "Camnasco") picco *= 0.6; 
+
+                        if (picco > 0) {
+                            finalProj += picco * Math.exp(- (dToP*dToP)/(2 * 4.84));
+                        }
+                    });
+                }
+                
+                if (finalProj > 100) finalProj = 100;
+                let ind = finalProj || 0;
+                
+                let pRounded = Math.round(ind / 10) * 10;
+                let c = getHeatmapColor(pRounded);
+                
+                zc.innerHTML += `
+                    <div class="zona-item">
+                        <div class="zona-info">
+                            <h3>${z.zona}</h3>
+                            <div class="zona-stato">${z.stato} (T: ${z.t_min_stimata}°/${z.t_max_stimata}°)</div>
+                            <div class="btn-trovati" onclick="salvaRitrovamento('${z.zona}')">🍄 Trovati!</div>
+                        </div>
+                        <div class="progress-circle" style="background-color: ${c.bg}; color: ${c.txt}; border-color: ${c.border};">
+                            ${Math.round(ind)}%
+                        </div>
+                    </div>`;
+            });
+
+            if(data.storico_completo && data.storico_completo.length >= 1) {
+                const ieri = data.storico_completo[data.storico_completo.length - 1];
+                document.getElementById('m-tmax').innerText = ieri.t_max + "°";
+                document.getElementById('m-tmin').innerText = ieri.t_min + "°";
+                document.getElementById('m-pioggia').innerText = ieri.pioggia_mm + " mm";
+                document.getElementById('m-vento').innerText = ieri.vento_max + " km/h";
+            }
+        }
+
+        function renderCalendars() {
+            const data = globalData;
+            let diario = JSON.parse(localStorage.getItem('diario_funghi')) || {};
+            let isSenescenzaAttiva = document.getElementById('toggle-senescenza') ? document.getElementById('toggle-senescenza').checked : false;
+            
+            // Mostriamo fino a 60 giorni nello storico passato per vedere anche luglio
+            const past = data.storico_completo.slice(-60).reverse();
+            let pastHtml = '';
+            // Storico Dati Certi
+            past.forEach(d => {
+                let icon = getMeteoIcon(d.pioggia_mm, d.vento_max, d.t_min);
+                // Controllo se è domenica (0 = Domenica in JavaScript)
+                let isDomenica = new Date(d.data).getDay() === 0 ? " domenica" : "";
+                
+                pastHtml += `
+                    <div class="cal-row">
+                        <div class="cal-date${isDomenica}">${formatDDMM(d.data)}</div>
+                        <div class="cal-luna">${getFaseLunare(d.data)}</div>
+                        <div class="cal-icon">${icon}</div>
+                        <div class="cal-data">${d.pioggia_mm}mm | ${Math.round(d.t_min)}°/${Math.round(d.t_max)}°</div>
+                        <div class="cal-diario">${diario[d.data] ? '🍄' : ''}</div>
+                    </div>`;
+            });
+
+            document.getElementById('past-calendar').innerHTML = pastHtml;
+
+            let futureHtml = `
+                <div class="cal-row cal-header">
+                    <div class="cal-date">Data</div>
+                    <div class="cal-luna"></div>
+                    <div class="future-zones">
+                        <div class="z-label">CAM</div>
+                        <div class="z-label">B.SE</div>
+                        <div class="z-label">B.NE</div>
+                        <div class="z-label">FAG</div>
+                        <div class="z-label">PIN</div>
+                    </div>
+                </div>`;
+            
+            const oggi = new Date();
+            
+            for(let offset = 0; offset <= 14; offset++) {
+                let futureDate = new Date();
+                futureDate.setDate(oggi.getDate() + offset);
+                
+                let distDalDatoCerto = offset + 1; 
+                let dots = '';
+                
+                data.zone.forEach((z) => {
+                    let finalProj = 0;
+                    if (z.onde && z.onde.length > 0) {
+                        z.onde.forEach(onda => {
+                            let ritardoAggiuntivo = (isSenescenzaAttiva && z.zona !== "Camnasco") ? 4 : 0;
+                            let dToP = (distDalDatoCerto - (onda.giorni_mancanti_da_ieri + ritardoAggiuntivo));
+                            
+                            let picco = onda.indice_picco || 0;
+                            if (isSenescenzaAttiva && z.zona !== "Camnasco") picco *= 0.6; 
+
+                            if (picco > 0) {
+                                finalProj += picco * Math.exp(- (dToP*dToP)/(2 * 4.84));
+                            }
+                        });
+                    }
+                    
+                    let pRounded = Math.round(finalProj / 10) * 10;
+                    if(pRounded > 100) pRounded = 100;
+                    if(pRounded < 0) pRounded = 0;
+
+                    let c = getHeatmapColor(pRounded);
+                    let label = pRounded === 0 ? '-' : pRounded + '%';
+                    dots += `<div class="future-dot" style="background-color: ${c.bg}; color: ${c.txt}; border-color: ${c.border};">${label}</div>`;
+                });
+
+// Controllo se la data futura è domenica
+                let isDomenica = futureDate.getDay() === 0 ? " domenica" : "";
+
+                futureHtml += `
+                    <div class="cal-row">
+                        <div class="cal-date${isDomenica}">${String(futureDate.getDate()).padStart(2, '0')}/${String(futureDate.getMonth() + 1).padStart(2, '0')}</div>
+                        <div class="cal-luna">${getFaseLunare(futureDate.toISOString().split('T')[0])}</div>
+                        <div class="future-zones">${dots}</div>
+                    </div>`;
+
+            }
+            document.getElementById('future-calendar').innerHTML = futureHtml;
+        }
+
+        async function loadOpenMeteo() {
+            const url = "https://api.open-meteo.com/v1/forecast?latitude=46.0770&longitude=9.2424&elevation=1222&hourly=temperature_2m,relative_humidity_2m,precipitation,windspeed_10m&timezone=Europe/Rome";
+            let isSenescenzaAttiva = document.getElementById('toggle-senescenza') ? document.getElementById('toggle-senescenza').checked : false;
+
+            try {
+                const res = await fetch(url);
+                if (!res.ok) throw new Error("Errore API Meteo: " + res.status);
+                const data = await res.json();
+                const h = data.hourly;
+                
+                let daysMap = {};
+                for(let i = 0; i < h.time.length; i++) {
+                    let datePart = h.time[i].split('T')[0];
+                    if(!daysMap[datePart]) {
+                        daysMap[datePart] = { temps: [], prec: 0, winds: [] };
+                    }
+                    if(h.temperature_2m[i] !== null) daysMap[datePart].temps.push(h.temperature_2m[i]);
+                    if(h.precipitation[i] !== null) daysMap[datePart].prec += h.precipitation[i];
+                    if(h.windspeed_10m && h.windspeed_10m[i] !== null) daysMap[datePart].winds.push(h.windspeed_10m[i]);
+                }
+
+                let html = `
+                    <div class="cal-row cal-header">
+                        <div style="width: 45px;">Data</div>
+                        <div style="flex-grow: 1; padding-left: 5px;">Meteo (1.222m)</div>
+                        <div class="future-zones">
+                            <div class="z-label">B.SE</div>
+                            <div class="z-label">B.NE</div>
+                            <div class="z-label">FAG</div>
+                            <div class="z-label">PIN</div>
+                        </div>
+                    </div>`;
+                
+                const giorni = ["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"];
+                let count = 0;
+
+                for(let date in daysMap) {
+                    if(count >= 4) break; 
+                    
+                    let temps = daysMap[date].temps;
+                    let winds = daysMap[date].winds;
+                    let tmax = temps.length ? Math.round(Math.max(...temps)) : '--';
+                    let tmin = temps.length ? Math.round(Math.min(...temps)) : '--';
+                    let pTot = daysMap[date].prec.toFixed(1);
+                    let vMax = winds.length ? Math.round(Math.max(...winds)) : 0;
+                    
+                    let dataObj = new Date(date);
+                    let nomeGiorno = count === 0 ? "Oggi" : (count === 1 ? "Domani" : giorni[dataObj.getDay()]);
+                    let icona = getMeteoIcon(parseFloat(pTot), vMax, tmin);
+                    
+                    let distDalDatoCerto = count + 1; 
+                    let dots = '';
+                    
+                    globalData.zone.forEach((z) => {
+                        if (z.zona === "Camnasco") return; 
+
+                        let finalProj = 0;
+                        if (z.onde && z.onde.length > 0) {
+                            z.onde.onda?.forEach?.(onda => {}); // safe guard
+                            z.onde.forEach(onda => {
+                                let ritardoAggiuntivo = (isSenescenzaAttiva && z.zona !== "Camnasco") ? 4 : 0;
+                                let dToP = (distDalDatoCerto - (onda.giorni_mancanti_da_ieri + ritardoAggiuntivo));
+                                
+                                let picco = onda.indice_picco || 0;
+                                if (isSenescenzaAttiva && z.zona !== "Camnasco") picco *= 0.6; 
+
+                                if (picco > 0) {
+                                    finalProj += picco * Math.exp(- (dToP*dToP)/(2 * 4.84));
+                                }
+                            });
+                        }
+                        
+                        if (tmin < 6) finalProj *= 0.3; 
+                        if (vMax > 25 && pTot < 1.0 && z.zona !== "Faggi Ovest") finalProj *= 0.5; 
+                        
+                        let pRounded = Math.round(finalProj / 10) * 10;
+                        if(pRounded > 100) pRounded = 100;
+                        if(pRounded < 0) pRounded = 0;
+
+                        let c = getHeatmapColor(pRounded);
+                        let label = pRounded === 0 ? '-' : pRounded + '%';
+                        dots += `<div class="future-dot" style="background-color: ${c.bg}; color: ${c.txt}; border-color: ${c.border};">${label}</div>`;
+                    });
+                    
+                    let isDomenica = dataObj.getDay() === 0 ? " domenica" : "";
+
+                    html += `
+                        <div class="cal-row" style="padding: 12px 0;">
+                            <div class="cal-date" style="width: 45px; font-size: 0.8rem; line-height: 1.2;">
+                                ${nomeGiorno}<br>
+                                <span style="font-weight:normal; font-size:0.7rem;">${date.substring(8,10)}/${date.substring(5,7)}</span>
+                            </div>
+                            <div class="cal-icon" style="width: 30px;">${icona}</div>
+                            <div style="flex-grow: 1; font-size: 0.75rem; line-height: 1.3; padding-left: 5px;">
+                                <span style="color: #F44336; font-weight: bold;">${tmax}°</span> / <span style="color: #2196F3; font-weight: bold;">${tmin}°</span><br>
+                                💧 ${pTot}mm <span style="color:#666; margin-left:3px;">💨 ${vMax}kmh</span>
+                            </div>
+                            <div class="future-zones">${dots}</div>
+                        </div>`;
+                    count++;
+                }
+                document.getElementById('forecast-container').html = html; // fix syntax error below
+                document.getElementById('forecast-container').innerHTML = html;
+            } catch (e) {
+                document.getElementById('forecast-container').innerHTML = "Errore nel caricamento previsioni: " + e.message;
+            }
+        }
+
+        window.onload = initApp;
+    </script>
+</body>
+</html>
