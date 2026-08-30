@@ -1,0 +1,41 @@
+name: Aggiornamento Previsioni Funghi
+
+on:
+  schedule:
+    # Esegue ogni notte alle 01:00 UTC (03:00 ora italiana estiva)
+    - cron: '0 1 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  aggiorna-dati:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v5
+
+      - name: Configura Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Installa dipendenze
+        run: |
+          pip install -r requirements.txt
+
+      - name: Esegui elaborazione
+        run: |
+          python main.py
+
+      - name: Salva e carica JSON aggiornato
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/previsioni.json
+          git commit -m "Auto-update previsioni meteo funghi [skip ci]" || exit 0
+          git push
+          
