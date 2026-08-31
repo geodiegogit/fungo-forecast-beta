@@ -272,9 +272,9 @@ def main():
     for d in nuovi_dati:
         storico_unito[d["data"]] = d
         
-    # Ordiniamo cronologicamente e teniamo gli ultimi 90 giorni
+    # Ordiniamo cronologicamente e teniamo gli ultimi 120 giorni (modificato da 90 a 120)
     storico_ordinato = sorted(storico_unito.values(), key=lambda x: x["data"])
-    storico_finale = storico_ordinato[-90:]
+    storico_finale = storico_ordinato[-120:]
 
     analizzatore = AnalizzatoreSiccitaPorcini()
     diagnosi = analizzatore.analizza(storico_finale)
