@@ -268,62 +268,62 @@
             }
             
             let isSenescenzaAttiva = document.getElementById('toggle-senescenza') ? document.getElementById('toggle-senescenza').checked : false;
-
-let consiglio = "";
+//da qui
+            let consiglio = "";
             let tmin = diag.t_min_attuale;
             let vento = diag.vento_max_attuale;
             let rh = diag.rh_media_attuale;
 
-            // Il ritardo biologico viene calcolato dinamicamente (4 giorni se la senescenza è attiva)
             let ritardoStress = isSenescenzaAttiva ? 4 : 0;
             let introSenescenza = isSenescenzaAttiva ? "🍂 <i>Senescenza attiva: l'onda altitudinale ha subito un ritardo vitale.</i><br>" : "";
 
+            // 1. RICERCA ONDE MULTIPLE: Controlliamo le proiezioni REALI di oggi per tutte le zone
+            // Selezioniamo le zone che superano il 30% di potenziale
+            let zoneAttive = data.zone.filter(z => Math.round(z.indice_buttata) >= 30);
+            let alertOndeMultiple = "";
+            
+            if (zoneAttive.length > 0) {
+                let nomi = zoneAttive.map(z => `${z.zona} (${Math.round(z.indice_buttata)}%)`).join(", ");
+                alertOndeMultiple = `<br><br>🍄 <b>Attenzione Onde Multiple:</b> Le grandi piogge passate stanno già dando i loro frutti in quota! Oggi concentrati assolutamente su: <b>${nomi}</b>.`;
+            }
+
+            // 2. LOGICA DEL CONSIGLIO
             if (ggDaEvento === null) {
-                consiglio = "Il bosco è secco e in attesa. 🍂 L'unica speranza è cercare le zone con sorgenti sotterranee (Camnasco) o aspettare la pioggia.";
+                consiglio = "Il bosco è secco e in attesa. 🍂 L'unica speranza è cercare le zone con sorgenti sotterranee (Camnasco) o aspettare la pioggia." + alertOndeMultiple;
             } else if (tmin < 6) {
-                consiglio = "Fa frècc di notte! 🥶 L'abbassamento termico blocca le cime alte. Stai sotto i 1000m nei boschi ben esposti al sole o ripiega su Camnasco (750m).";
+                consiglio = "Fa frècc di notte! 🥶 L'abbassamento termico blocca le cime alte. Stai sotto i 1000m nei boschi ben esposti al sole o ripiega su Camnasco (750m)." + alertOndeMultiple;
             } else if (vento > 25 && rh < 55) {
-                consiglio = "Attento al vento secco! 💨 Ha asciugato i versanti aperti. Cerca rifugio nell'anfiteatro dei Faggi a Ovest (Sant'Amate) che è protetto dal Favonio (1200-1600m).";
+                consiglio = "Attento al vento secco! 💨 Ha asciugato i versanti aperti. Cerca rifugio nell'anfiteatro dei Faggi a Ovest (Sant'Amate) che è protetto dal Favonio (1200-1600m)." + alertOndeMultiple;
             } else {
-                // Modello di Risalita Altitudinale
-                // Base: Le betulle iniziano all'ottavo giorno, faggi e pini completano l'onda al 14° giorno.
                 let giornoInizioMontagna = 8 + ritardoStress;
                 let giornoFineMontagna = 14 + ritardoStress;
                 
                 if (ggDaEvento < (6 + ritardoStress) && ggDaEvento >= 0) {
-                    consiglio = introSenescenza + "🌱 Le micorrize sono in piena incubazione. Il bosco si sta preparando. Manca ancora qualche giorno prima che l'onda arrivi in superficie.";
+                    if (zoneAttive.length > 0) {
+                         consiglio = introSenescenza + "🌱 L'ultima pioggia è ancora in incubazione, <b>ma il bosco è vivo! Segui le onde attive qui sotto.</b>" + alertOndeMultiple;
+                    } else {
+                         consiglio = introSenescenza + "🌱 Le micorrize sono in piena incubazione per l'ultimo evento piovoso. Il bosco si sta preparando. Manca ancora qualche giorno prima che l'onda arrivi in superficie.";
+                    }
                 } else if (ggDaEvento >= (6 + ritardoStress) && ggDaEvento < giornoInizioMontagna) {
-                    // Camnasco anticipa sempre tutti e non subisce la senescenza in modo critico
-                    consiglio = introSenescenza + "L'onda è appena partita dal basso! Punta a <b>Camnasco (750m)</b>, la sorgente e l'esposizione anticipano la buttata rispetto al resto della montagna.";
+                    consiglio = introSenescenza + "L'onda dell'ultima pioggia è appena partita dal basso! Punta a <b>Camnasco (750m)</b>, la sorgente anticipa la buttata." + alertOndeMultiple;
                 } else if (ggDaEvento > giornoFineMontagna) {
-                    consiglio = introSenescenza + "Siamo a fine ciclo. Le quote basse e medie si sono asciugate. 🏔️ I funghi superstiti li trovi in alto (sopra i 1500m), nei boschi bui o protetti dagli aghi di pino (Abeti Nord).";
+                    consiglio = introSenescenza + "Siamo a fine ciclo per l'ultimo evento. Le quote medie si sono asciugate. 🏔️ I funghi superstiti li trovi in alto." + alertOndeMultiple;
                 } else {
-                    // CALCOLO DEL MIRINO DINAMICO
-                    // L'onda sale da 1000m (giorno inizio) a 1600m (giorno fine).
-                    // In 6 giorni deve salire di 600 metri, quindi 100 metri esatti al giorno.
                     let quotaDinamica = 1000 + ((ggDaEvento - giornoInizioMontagna) * 100);
-                    
-                    // Paletti fisici della montagna
                     if (quotaDinamica > 1600) quotaDinamica = 1600;
                     if (quotaDinamica < 1000) quotaDinamica = 1000;
-                    
-                    // Arrotondiamo a 50m per la leggibilità del fungiatt
                     let quotaArrotondata = Math.round(quotaDinamica / 50) * 50;
                     
-                    // Match delle quote reali con le zone del tuo bosco
                     let zoneConsigliate = [];
                     if (quotaArrotondata >= 1000 && quotaArrotondata <= 1350) zoneConsigliate.push("Betulle SE");
                     if (quotaArrotondata >= 1000 && quotaArrotondata <= 1300) zoneConsigliate.push("Betulle NE");
                     if (quotaArrotondata >= 1200 && quotaArrotondata <= 1600) zoneConsigliate.push("Faggi Ovest");
                     if (quotaArrotondata >= 1300 && quotaArrotondata <= 1600) zoneConsigliate.push("Abeti Nord");
                     
-                    consiglio = introSenescenza + `🎯 <b>Il Mirino Altitudinale:</b> L'onda termica sta risalendo i versanti. Oggi taglia la montagna mantenendoti rigorosamente intorno a quota <b>${quotaArrotondata} metri</b>.<br><br>`;
-                    consiglio += `🌲 <b>Zone in target:</b> ${zoneConsigliate.join(", ")}.<br>`;
+                    consiglio = introSenescenza + `🎯 <b>Il Mirino Altitudinale:</b> L'onda termica dell'ultima pioggia sta salendo. Oggi taglia la montagna intorno a quota <b>${quotaArrotondata} metri</b>.<br>`;
+                    consiglio += `🌲 <b>Zone in target (nuova onda):</b> ${zoneConsigliate.join(", ")}.<br>`;
                     
-                    // Tocco analitico finale per chiudere il consiglio
-                    if (quotaArrotondata < 1200) consiglio += "<i>Le faggete sono ancora in incubazione, rimani nei boschi di betulla!</i>";
-                    else if (quotaArrotondata >= 1450) consiglio += "<i>Le quote medie iniziano a scaricarsi, esplora le faggete alte e i primi abeti!</i>";
-                    else consiglio += "<i>Fase di transizione perfetta: betulle alte o faggete basse.</i>";
+                    consiglio += alertOndeMultiple;
                 }
             }
 //fino qui 
