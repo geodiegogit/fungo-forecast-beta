@@ -278,6 +278,9 @@ function salvaRitrovamento(zona) {
             return colors[p] || colors[0];
         }
 
+
+//CONSIGLIO DEL FUNGIATT
+        
         function renderDashboard() {
             const data = globalData;
             let ultimoDato = data.storico_completo[data.storico_completo.length - 1].data;
@@ -308,17 +311,50 @@ function salvaRitrovamento(zona) {
             let ritardoStress = isSenescenzaAttiva ? 4 : 0;
             let introSenescenza = isSenescenzaAttiva ? "🍂 <i>Senescenza attiva: l'onda altitudinale ha subito un ritardo vitale.</i><br>" : "";
 
-            // 1. RICERCA ONDE MULTIPLE: Controlliamo le proiezioni REALI di oggi per tutte le zone
-            // Selezioniamo le zone che superano il 30% di potenziale
+// 1. RICERCA ONDE MULTIPLE: Controlliamo le proiezioni REALI di oggi per tutte le zone
             let zoneAttive = data.zone.filter(z => Math.round(z.indice_buttata) >= 30);
             let alertOndeMultiple = "";
             
             if (zoneAttive.length > 0) {
-                let nomi = zoneAttive.map(z => `${z.zona} (${Math.round(z.indice_buttata)}%)`).join(", ");
-                alertOndeMultiple = `<br><br>🍄 <b>Attenzione Onde Multiple:</b> Le grandi piogge passate stanno già dando i loro frutti in quota! Oggi concentrati assolutamente su: <b>${nomi}</b>.`;
+                let dettagliZone = zoneAttive.map(z => {
+                    let quotaTesto = "";
+                    if (z.zona !== "Camnasco") {
+                        let gm = z.giorni_mancanti_al_picco;
+                        let minQ, maxQ;
+                        
+                        // Associa i limiti altimetrici reali del tuo bosco
+                        if (z.zona === "Betulle SE") { minQ = 1000; maxQ = 1350; }
+                        else if (z.zona === "Betulle NE") { minQ = 1000; maxQ = 1300; }
+                        else if (z.zona === "Faggi Ovest") { minQ = 1200; maxQ = 1600; }
+                        else if (z.zona === "Abeti Nord") { minQ = 1300; maxQ = 1600; }
+                        
+                        // Calcolo per trovare funghi adulti (visibili, 5-10cm)
+                        if (gm >= 4) {
+                            // L'onda è appena entrata nella zona: gli adulti sono solo sul limite inferiore
+                            quotaTesto = `<span style="color:#555; font-size:0.85rem;"><br>↳ Cerca in <b>basso</b> (${minQ}m - ${minQ + 150}m)</span>`;
+                        } else if (gm >= 1 && gm <= 3) {
+                            // Fase centrale dell'onda: esplosione a metà versante
+                            let midStart = minQ + 100;
+                            let midEnd = maxQ - 100;
+                            quotaTesto = `<span style="color:#555; font-size:0.85rem;"><br>↳ Cerca a <b>metà versante</b> (${midStart}m - ${midEnd}m)</span>`;
+                        } else {
+                            // Picco raggiunto o superato: i funghi sani superstiti sono solo in cima
+                            quotaTesto = `<span style="color:#555; font-size:0.85rem;"><br>↳ Cerca in <b>alto</b> (${maxQ - 150}m - ${maxQ}m)</span>`;
+                        }
+                    } else {
+                        quotaTesto = `<span style="color:#555; font-size:0.85rem;"><br>↳ Quota stabile (Sorgenti a 750m)</span>`;
+                    }
+                    return `<li style="margin-bottom: 6px;"><b>${z.zona}</b> (${Math.round(z.indice_buttata)}%): ${quotaTesto}</li>`;
+                }).join("");
+                
+                alertOndeMultiple = `<div style="margin-top: 15px; padding: 10px; background: #e8f5e9; border-radius: 8px; border-left: 4px solid #4caf50;">
+                    🍄 <b>Focus Adulti (5-10cm):</b><br>
+                    <span style="font-size: 0.85rem;">Per trovare esemplari già visibili, segui lo spostamento dell'onda all'interno delle zone già attive:</span>
+                    <ul style="margin-top: 8px; padding-left: 20px;">${dettagliZone}</ul>
+                </div>`;
             }
 
-            // 2. LOGICA DEL CONSIGLIO
+// 2. LOGICA DEL CONSIGLIO
             if (ggDaEvento === null) {
                 consiglio = "Il bosco è secco e in attesa. 🍂 L'unica speranza è cercare le zone con sorgenti sotterranee (Camnasco) o aspettare la pioggia." + alertOndeMultiple;
             } else if (tmin < 6) {
