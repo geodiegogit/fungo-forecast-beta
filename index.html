@@ -194,16 +194,20 @@
                 globalData = await response.json();
                 aggiornaTutto(); 
                 
-                const st = globalData.storico_completo.slice(-10);
+// Tagliamo gli ultimi 15 giorni (invece di 10)
+                const st = globalData.storico_completo.slice(-15);
                 new Chart(document.getElementById('meteoChart').getContext('2d'), {
                     type: 'bar',
                     data: {
                         labels: st.map(d => formatDDMM(d.data)),
                         datasets: [
                             { label: 'Pioggia', data: st.map(d => d.pioggia_mm), backgroundColor: '#2196F3', yAxisID: 'y' },
-                            { label: 'T.Max', data: st.map(d => d.t_max), borderColor: '#F44336', type: 'line', yAxisID: 'y1' }
+                            { label: 'T.Max', data: st.map(d => d.t_max), borderColor: '#F44336', type: 'line', yAxisID: 'y1', borderWidth: 2 },
+                            // Aggiunto il dataset per la T.Min (colore azzurro per indicare il fresco)
+                            { label: 'T.Min', data: st.map(d => d.t_min), borderColor: '#00BCD4', type: 'line', yAxisID: 'y1', borderWidth: 2 }
                         ]
                     },
+                    
                     options: { responsive: true, maintainAspectRatio: false, scales: { y: { position: 'left' }, y1: { position: 'right' } } }
                 });
 
