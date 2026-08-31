@@ -174,20 +174,51 @@
             return '☀️';
         }
 
-        function salvaRitrovamento(zona) {
+function salvaRitrovamento(zona) {
             let diario = JSON.parse(localStorage.getItem('diario_funghi')) || {};
             let oggi = new Date().toISOString().split('T')[0];
+            
+            // 1. Chiedi lo stadio di crescita con un prompt nativo
+            let stadio = prompt(`🍄 Ritrovamento in ${zona}!\n\nInserisci il numero dello stadio:\n1 = 🌱 Primordio (piccolo, appena nato)\n2 = 🍄 Fresco (sano e in spinta)\n3 = 🍂 Maturo (spugna verde, a fine ciclo)`);
+            
+            if (stadio === null || stadio.trim() === "") return; // L'utente ha annullato
+            
+            // 2. Associa l'icona e il testo in base alla scelta
+            let icona = "🍄";
+            let desc = "Fresco";
+            
+            if (stadio === "1") { icona = "🌱"; desc = "Primordio"; }
+            else if (stadio === "2") { icona = "🍄"; desc = "Fresco"; }
+            else if (stadio === "3") { icona = "🍂"; desc = "Maturo"; }
+            else { alert("Scelta non valida. Inserisci 1, 2 o 3."); return; }
+            
+            let recordTesto = `${zona} (${desc})`;
+
             if (!diario[oggi]) diario[oggi] = [];
-            if (!diario[oggi].includes(zona)) {
-                diario[oggi].push(zona);
+            
+            // 3. Controlla se hai già inserito un record per questa zona oggi
+            let indiceEsistente = diario[oggi].findIndex(r => r.startsWith(zona));
+            
+            if (indiceEsistente === -1) {
+                // Nuovo inserimento
+                diario[oggi].push(recordTesto);
                 localStorage.setItem('diario_funghi', JSON.stringify(diario));
-                alert(`🍄 Ottimo! Ritrovamento in ${zona} salvato.`);
+                alert(`${icona} Ottimo! Salvato nel diario: ${recordTesto}`);
                 renderCalendars(); 
             } else {
-                alert(`Hai già segnato un ritrovamento per ${zona} oggi!`);
+                // Aggiornamento di un ritrovamento esistente nella stessa zona (es. trovi prima un maturo, poi un fresco)
+                if(confirm(`Hai già segnato un ritrovamento in ${zona} oggi. Vuoi sovrascriverlo con "${desc}"?`)) {
+                    diario[oggi][indiceEsistente] = recordTesto;
+                    localStorage.setItem('diario_funghi', JSON.stringify(diario));
+                    alert(`${icona} Ritrovamento aggiornato con successo!`);
+                    renderCalendars();
+                }
             }
         }
 
+//fine salva ritrovamento
+
+        
         async function initApp() {
             try {
                 const response = await fetch(DATA_URL + '?t=' + new Date().getTime());
