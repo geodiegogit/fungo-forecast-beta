@@ -125,7 +125,7 @@
 
     <div class="container hidden" id="tab-meteo">
         <div class="card">
-            <h2 class="section-title">Meteo 4 Giorni (Open-Meteo)</h2>
+            <h2 class="section-title">Meteo 7 Giorni (Open-Meteo)</h2>
             <p style="font-size: 0.8rem; color: #666; margin-bottom: 10px;">Dati orari centrati su Betulle Sud-Est (Quota 1.222m).</p>
             <div id="forecast-container">Caricamento previsioni in corso...</div>
         </div>
@@ -473,6 +473,7 @@
                         <div style="width: 45px;">Data</div>
                         <div style="flex-grow: 1; padding-left: 5px;">Meteo (1.222m)</div>
                         <div class="future-zones">
+                            <div class="z-label">CAM</div>
                             <div class="z-label">B.SE</div>
                             <div class="z-label">B.NE</div>
                             <div class="z-label">FAG</div>
@@ -484,7 +485,7 @@
                 let count = 0;
 
                 for(let date in daysMap) {
-                    if(count >= 4) break; 
+                    if(count >= 7) break; 
                     
                     let temps = daysMap[date].temps;
                     let winds = daysMap[date].winds;
@@ -501,7 +502,7 @@
                     let dots = '';
                     
                     globalData.zone.forEach((z) => {
-                        if (z.zona === "Camnasco") return; 
+                      //  if (z.zona === "Camnasco") return;  
 
                         let finalProj = 0;
                         if (z.onde && z.onde.length > 0) {
