@@ -405,7 +405,7 @@
                     consiglio += alertOndeMultiple;
                 }
             }
-//fino qui 
+        //fino qui 
             document.getElementById('consiglio-text').innerHTML = consiglio;
 
             const zc = document.getElementById('zone-container');
@@ -459,6 +459,9 @@
         }
 
         function renderCalendars() {
+        // Azzera la memoria per il calcolo della fase di "discesa"
+            window.memoriaOnde = {};
+            
             const data = globalData;
             let diario = JSON.parse(localStorage.getItem('diario_funghi')) || {};
             let isSenescenzaAttiva = document.getElementById('toggle-senescenza') ? document.getElementById('toggle-senescenza').checked : false;
