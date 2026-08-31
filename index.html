@@ -138,7 +138,7 @@
     </div>
 
     <script>
-        // --- SOSTITUISCI CON IL TUO USERNAME ---
+// --- SOSTITUISCI CON IL TUO USERNAME ---
         const GITHUB_USERNAME = "geodiegogit"; 
         const REPO_NAME = "fungo-forecast-beta"; 
         const DATA_URL = `https://raw.githubusercontent.com/${GITHUB_USERNAME}/${REPO_NAME}/main/data/previsioni.json`;
@@ -174,7 +174,8 @@
             return '☀️';
         }
 
-function salvaRitrovamento(zona) {
+// SALVA RITROVAMENTO        
+        function salvaRitrovamento(zona) {
             let diario = JSON.parse(localStorage.getItem('diario_funghi')) || {};
             let oggi = new Date().toISOString().split('T')[0];
             
@@ -225,7 +226,7 @@ function salvaRitrovamento(zona) {
                 globalData = await response.json();
                 aggiornaTutto(); 
                 
-// Tagliamo gli ultimi 15 giorni (invece di 10)
+        // Tagliamo gli ultimi 15 giorni (invece di 10)
                 const st = globalData.storico_completo.slice(-15);
                 new Chart(document.getElementById('meteoChart').getContext('2d'), {
                     type: 'bar',
@@ -261,21 +262,32 @@ function salvaRitrovamento(zona) {
             document.getElementById('btn-' + tab).classList.add('active');
         }
 
-        function getHeatmapColor(p) {
-            const colors = {
-                0:   {bg: '#ffffff', txt: '#cccccc', border: '#eeeeee'},
-                10:  {bg: '#fffde7', txt: '#777777', border: '#fff59d'}, 
-                20:  {bg: '#fff59d', txt: '#333333', border: '#ffee58'}, 
-                30:  {bg: '#ffee58', txt: '#333333', border: '#fdd835'},
-                40:  {bg: '#ffca28', txt: '#333333', border: '#ffb300'}, 
-                50:  {bg: '#ffa726', txt: '#ffffff', border: '#fb8c00'}, 
-                60:  {bg: '#ff9800', txt: '#ffffff', border: '#f57c00'},
-                70:  {bg: '#f4511e', txt: '#ffffff', border: '#e64a19'}, 
-                80:  {bg: '#e53935', txt: '#ffffff', border: '#d32f2f'}, 
-                90:  {bg: '#c62828', txt: '#ffffff', border: '#b71c1c'},
-                100: {bg: '#b71c1c', txt: '#ffffff', border: '#7f0000'}  
-            };
-            return colors[p] || colors[0];
+
+//FUNZIONE COLORI CASELLE
+        
+        function getFaseColor(p, isDiscesa) {
+            if (p === 0) return {bg: '#ffffff', txt: '#cccccc', border: '#eeeeee'};
+            
+            if (isDiscesa) {
+                // FASE 3: DISCESA (Maturazione avanzata / Senescenza) - Toni del Marrone
+                if (p >= 60) return {bg: '#5D4037', txt: '#ffffff', border: '#3E2723'}; // Marrone Scuro
+                if (p >= 35) return {bg: '#8D6E63', txt: '#ffffff', border: '#5D4037'}; // Marrone Medio
+                return {bg: '#D7CCC8', txt: '#5D4037', border: '#A1887F'}; // Marrone Chiaro (fine ciclo)
+            } else {
+                // FASE 1: INCUBAZIONE E SPUNTATA - Toni del Verde
+                if (p < 30) {
+                    if (p <= 10) return {bg: '#E8F5E9', txt: '#2E7D32', border: '#C8E6C9'}; // Verde chiarissimo (Incubazione)
+                    return {bg: '#4CAF50', txt: '#ffffff', border: '#388E3C'}; // Verde vivo (La spuntata - 3/5 cm)
+                } 
+                // FASE 2: SVILUPPO E PICCO - Toni Giallo/Arancio/Rosso
+                else if (p < 60) {
+                    if (p < 45) return {bg: '#FFEB3B', txt: '#333333', border: '#FBC02D'}; // Giallo (Sviluppo rapido)
+                    return {bg: '#FF9800', txt: '#ffffff', border: '#F57C00'}; // Arancione (Ottima pezzatura)
+                } else {
+                    if (p < 80) return {bg: '#F44336', txt: '#ffffff', border: '#D32F2f'}; // Rosso (Picco pieno)
+                    return {bg: '#B71C1C', txt: '#ffffff', border: '#7F0000'}; // Rosso scuro (Esplosione massima)
+                }
+            }
         }
 
 
@@ -302,7 +314,7 @@ function salvaRitrovamento(zona) {
             }
             
             let isSenescenzaAttiva = document.getElementById('toggle-senescenza') ? document.getElementById('toggle-senescenza').checked : false;
-//da qui
+        //da qui
             let consiglio = "";
             let tmin = diag.t_min_attuale;
             let vento = diag.vento_max_attuale;
@@ -311,7 +323,7 @@ function salvaRitrovamento(zona) {
             let ritardoStress = isSenescenzaAttiva ? 4 : 0;
             let introSenescenza = isSenescenzaAttiva ? "🍂 <i>Senescenza attiva: l'onda altitudinale ha subito un ritardo vitale.</i><br>" : "";
 
-// 1. RICERCA ONDE MULTIPLE: Controlliamo le proiezioni REALI di oggi per tutte le zone
+        // 1. RICERCA ONDE MULTIPLE: Controlliamo le proiezioni REALI di oggi per tutte le zone
             let zoneAttive = data.zone.filter(z => Math.round(z.indice_buttata) >= 30);
             let alertOndeMultiple = "";
             
@@ -354,7 +366,7 @@ function salvaRitrovamento(zona) {
                 </div>`;
             }
 
-// 2. LOGICA DEL CONSIGLIO
+        // 2. LOGICA DEL CONSIGLIO
             if (ggDaEvento === null) {
                 consiglio = "Il bosco è secco e in attesa. 🍂 L'unica speranza è cercare le zone con sorgenti sotterranee (Camnasco) o aspettare la pioggia." + alertOndeMultiple;
             } else if (tmin < 6) {
@@ -420,8 +432,9 @@ function salvaRitrovamento(zona) {
                 if (finalProj > 100) finalProj = 100;
                 let ind = finalProj || 0;
                 
-                let pRounded = Math.round(ind / 10) * 10;
-                let c = getHeatmapColor(pRounded);
+                let pRounded = Math.round(ind / 5) * 5;
+                let isDiscesaDash = (z.giorni_mancanti_al_picco !== null && z.giorni_mancanti_al_picco < 0);
+                let c = getFaseColor(pRounded, isDiscesaDash);
                 
                 zc.innerHTML += `
                     <div class="zona-item">
@@ -485,10 +498,17 @@ function salvaRitrovamento(zona) {
                 </div>`;
             
             const oggi = new Date();
-            
+
+            //BLOCCO CHE CALCOLA DATE FUTURE
             for(let offset = 0; offset <= 14; offset++) {
                 let futureDate = new Date();
                 futureDate.setDate(oggi.getDate() + offset);
+                
+                let distDalDatoCerto = offset + 1; 
+                let dots = '';
+
+        // (Prima del ciclo 'data.zone.forEach', inizializziamo un oggetto per ricordare il giorno prima)
+                if (!window.memoriaOnde) window.memoriaOnde = {};
                 
                 let distDalDatoCerto = offset + 1; 
                 let dots = '';
@@ -509,16 +529,26 @@ function salvaRitrovamento(zona) {
                         });
                     }
                     
-                    let pRounded = Math.round(finalProj / 10) * 10;
+                    // ARROTONDAMENTO AL 5%
+                    let pRounded = Math.round(finalProj / 5) * 5;
                     if(pRounded > 100) pRounded = 100;
                     if(pRounded < 0) pRounded = 0;
 
-                    let c = getHeatmapColor(pRounded);
+                    // CALCOLO DISCESA (Se l'indice di oggi è minore di quello di ieri)
+                    let isDiscesa = false;
+                    if (window.memoriaOnde[z.zona] !== undefined && pRounded < window.memoriaOnde[z.zona] && pRounded > 0) {
+                        isDiscesa = true;
+                    }
+                    window.memoriaOnde[z.zona] = pRounded; // Salviamo per il ciclo di domani
+
+                    let c = getFaseColor(pRounded, isDiscesa);
                     let label = pRounded === 0 ? '-' : pRounded + '%';
                     dots += `<div class="future-dot" style="background-color: ${c.bg}; color: ${c.txt}; border-color: ${c.border};">${label}</div>`;
-                });
+                });                
+                
 
-// Controllo se la data futura è domenica
+
+            // Controllo se la data futura è domenica
                 let isDomenica = futureDate.getDay() === 0 ? " domenica" : "";
 
                 futureHtml += `
@@ -532,6 +562,9 @@ function salvaRitrovamento(zona) {
             document.getElementById('future-calendar').innerHTML = futureHtml;
         }
 
+        
+//FUNZIONE LOAD OPEN METEO
+        
         async function loadOpenMeteo() {
             const url = "https://api.open-meteo.com/v1/forecast?latitude=46.0770&longitude=9.2424&elevation=1222&hourly=temperature_2m,relative_humidity_2m,precipitation,windspeed_10m&timezone=Europe/Rome";
             let isSenescenzaAttiva = document.getElementById('toggle-senescenza') ? document.getElementById('toggle-senescenza').checked : false;
@@ -608,11 +641,11 @@ function salvaRitrovamento(zona) {
                         if (tmin < 6) finalProj *= 0.3; 
                         if (vMax > 25 && pTot < 1.0 && z.zona !== "Faggi Ovest") finalProj *= 0.5; 
                         
-                        let pRounded = Math.round(finalProj / 10) * 10;
+                        let pRounded = Math.round(finalProj / 5) * 5;
                         if(pRounded > 100) pRounded = 100;
                         if(pRounded < 0) pRounded = 0;
-
-                        let c = getHeatmapColor(pRounded);
+                        let c = getFaseColor(pRounded, false); // Per semplicità nel meteo non calcoliamo la discesa
+                        
                         let label = pRounded === 0 ? '-' : pRounded + '%';
                         dots += `<div class="future-dot" style="background-color: ${c.bg}; color: ${c.txt}; border-color: ${c.border};">${label}</div>`;
                     });
