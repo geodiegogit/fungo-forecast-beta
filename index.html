@@ -265,27 +265,27 @@
 
 //FUNZIONE COLORI CASELLE
         
-        function getFaseColor(p, isDiscesa) {
-            if (p === 0) return {bg: '#ffffff', txt: '#cccccc', border: '#eeeeee'};
+function getFaseColor(p, isDiscesa) {
+            if (p === 0) return {bg: '#ffffff', txt: '#cccccc', border: '#eeeeee'}; // Bianco (Fermo)
             
             if (isDiscesa) {
-                // FASE 3: DISCESA (Maturazione avanzata / Senescenza) - Toni del Marrone
-                if (p >= 60) return {bg: '#5D4037', txt: '#ffffff', border: '#3E2723'}; // Marrone Scuro
-                if (p >= 35) return {bg: '#8D6E63', txt: '#ffffff', border: '#5D4037'}; // Marrone Medio
-                return {bg: '#D7CCC8', txt: '#5D4037', border: '#A1887F'}; // Marrone Chiaro (fine ciclo)
+                // FASE 3: DISCESA (Verde scuro che sfuma in marrone)
+                if (p >= 60) return {bg: '#5D4037', txt: '#ffffff', border: '#3E2723'}; // Marrone Scuro (Senescenza)
+                if (p >= 35) return {bg: '#689F38', txt: '#ffffff', border: '#33691E'}; // Verde Scuro/Oliva (Maturità)
+                return {bg: '#A1887F', txt: '#ffffff', border: '#795548'}; // Marrone sbiadito (Fine ciclo)
             } else {
-                // FASE 1: INCUBAZIONE E SPUNTATA - Toni del Verde
+                // FASE 1: INCUBAZIONE (Toni del Grigio - Lavoro sotterraneo)
                 if (p < 30) {
-                    if (p <= 10) return {bg: '#E8F5E9', txt: '#2E7D32', border: '#C8E6C9'}; // Verde chiarissimo (Incubazione)
-                    return {bg: '#4CAF50', txt: '#ffffff', border: '#388E3C'}; // Verde vivo (La spuntata - 3/5 cm)
+                    if (p <= 10) return {bg: '#F5F5F5', txt: '#9E9E9E', border: '#E0E0E0'}; // Grigio chiarissimo
+                    return {bg: '#EEEEEE', txt: '#757575', border: '#BDBDBD'}; // Grigio medio (Micelio in espansione)
                 } 
-                // FASE 2: SVILUPPO E PICCO - Toni Giallo/Arancio/Rosso
+                // FASE 2: SVILUPPO E PICCO (Toni del Verde - Crescita e vigore)
                 else if (p < 60) {
-                    if (p < 45) return {bg: '#FFEB3B', txt: '#333333', border: '#FBC02D'}; // Giallo (Sviluppo rapido)
-                    return {bg: '#FF9800', txt: '#ffffff', border: '#F57C00'}; // Arancione (Ottima pezzatura)
+                    if (p < 45) return {bg: '#A5D6A7', txt: '#1B5E20', border: '#81C784'}; // Verde chiaro (La spuntata)
+                    return {bg: '#4CAF50', txt: '#ffffff', border: '#388E3C'}; // Verde pieno (Sviluppo forte)
                 } else {
-                    if (p < 80) return {bg: '#F44336', txt: '#ffffff', border: '#D32F2f'}; // Rosso (Picco pieno)
-                    return {bg: '#B71C1C', txt: '#ffffff', border: '#7F0000'}; // Rosso scuro (Esplosione massima)
+                    if (p < 80) return {bg: '#00E676', txt: '#1B5E20', border: '#00C853'}; // Verde brillante intenso (Picco)
+                    return {bg: '#00C853', txt: '#ffffff', border: '#009624'}; // Verde smeraldo (Esplosione massima)
                 }
             }
         }
