@@ -269,46 +269,64 @@
             
             let isSenescenzaAttiva = document.getElementById('toggle-senescenza') ? document.getElementById('toggle-senescenza').checked : false;
 
-            let consiglio = "";
+let consiglio = "";
             let tmin = diag.t_min_attuale;
             let vento = diag.vento_max_attuale;
             let rh = diag.rh_media_attuale;
 
-            if (isSenescenzaAttiva && ggDaEvento !== null) {
-                consiglio = "🍂 Il bosco è in senescenza parziale. Le betulle stanno risparmiando energia. La buttata sarà ritardata e meno intensa del solito, concentrati sulle zone più umide.";
-            } else if (ggDaEvento === null) {
+            // Il ritardo biologico viene calcolato dinamicamente (4 giorni se la senescenza è attiva)
+            let ritardoStress = isSenescenzaAttiva ? 4 : 0;
+            let introSenescenza = isSenescenzaAttiva ? "🍂 <i>Senescenza attiva: l'onda altitudinale ha subito un ritardo vitale.</i><br>" : "";
+
+            if (ggDaEvento === null) {
                 consiglio = "Il bosco è secco e in attesa. 🍂 L'unica speranza è cercare le zone con sorgenti sotterranee (Camnasco) o aspettare la pioggia.";
             } else if (tmin < 6) {
-                consiglio = "Fa frècc di notte! 🥶 Lascia perdere le cime alte. Stai sotto i 1000m nei boschi ben esposti al sole (Sud/Sud-Est) per trovare l'habitat giusto.";
+                consiglio = "Fa frècc di notte! 🥶 L'abbassamento termico blocca le cime alte. Stai sotto i 1000m nei boschi ben esposti al sole o ripiega su Camnasco (750m).";
             } else if (vento > 25 && rh < 55) {
-                consiglio = "Attento al vento secco! 💨 Ha asciugato i versanti aperti. Cerca rifugio nell'anfiteatro dei Faggi a Ovest (Sant'Amate) che è protetto dal Favonio.";
-            } else if (ggDaEvento <= 5) {
-                consiglio = "La buttata si sta svegliando! 🌱 L'onda parte dal basso: punta tra i 700 e i 950m tra castagni e betulle, cercando i versanti baciati dal sole (Sud-Est).";
-            } else if (ggDaEvento > 5 && ggDaEvento <= 9) {
-                consiglio = "Siamo nel momento d'oro delle quote medie! 🍄 Esplora tra i 1000m e i 1300m (betulle e primi faggi). Le esposizioni Est e Sud-Est sono il top.";
-            } else if (ggDaEvento > 9 && ggDaEvento <= 14) {
-                consiglio = "L'onda sta salendo! 🌲 Le quote basse si asciugano. Spostati sui 1400-1500m nei faggi, provando anche le zone fresche a Nord-Est.";
+                consiglio = "Attento al vento secco! 💨 Ha asciugato i versanti aperti. Cerca rifugio nell'anfiteatro dei Faggi a Ovest (Sant'Amate) che è protetto dal Favonio (1200-1600m).";
             } else {
-                consiglio = "Siamo a fine ciclo. I funghi superstiti li trovi in alto (sopra i 1500m), nei boschi bui o protetti dai pini (habitat del Pinophilus). 🏔️";
+                // Modello di Risalita Altitudinale
+                // Base: Le betulle iniziano all'ottavo giorno, faggi e pini completano l'onda al 14° giorno.
+                let giornoInizioMontagna = 8 + ritardoStress;
+                let giornoFineMontagna = 14 + ritardoStress;
+                
+                if (ggDaEvento < (6 + ritardoStress) && ggDaEvento >= 0) {
+                    consiglio = introSenescenza + "🌱 Le micorrize sono in piena incubazione. Il bosco si sta preparando. Manca ancora qualche giorno prima che l'onda arrivi in superficie.";
+                } else if (ggDaEvento >= (6 + ritardoStress) && ggDaEvento < giornoInizioMontagna) {
+                    // Camnasco anticipa sempre tutti e non subisce la senescenza in modo critico
+                    consiglio = introSenescenza + "L'onda è appena partita dal basso! Punta a <b>Camnasco (750m)</b>, la sorgente e l'esposizione anticipano la buttata rispetto al resto della montagna.";
+                } else if (ggDaEvento > giornoFineMontagna) {
+                    consiglio = introSenescenza + "Siamo a fine ciclo. Le quote basse e medie si sono asciugate. 🏔️ I funghi superstiti li trovi in alto (sopra i 1500m), nei boschi bui o protetti dagli aghi di pino (Abeti Nord).";
+                } else {
+                    // CALCOLO DEL MIRINO DINAMICO
+                    // L'onda sale da 1000m (giorno inizio) a 1600m (giorno fine).
+                    // In 6 giorni deve salire di 600 metri, quindi 100 metri esatti al giorno.
+                    let quotaDinamica = 1000 + ((ggDaEvento - giornoInizioMontagna) * 100);
+                    
+                    // Paletti fisici della montagna
+                    if (quotaDinamica > 1600) quotaDinamica = 1600;
+                    if (quotaDinamica < 1000) quotaDinamica = 1000;
+                    
+                    // Arrotondiamo a 50m per la leggibilità del fungiatt
+                    let quotaArrotondata = Math.round(quotaDinamica / 50) * 50;
+                    
+                    // Match delle quote reali con le zone del tuo bosco
+                    let zoneConsigliate = [];
+                    if (quotaArrotondata >= 1000 && quotaArrotondata <= 1350) zoneConsigliate.push("Betulle SE");
+                    if (quotaArrotondata >= 1000 && quotaArrotondata <= 1300) zoneConsigliate.push("Betulle NE");
+                    if (quotaArrotondata >= 1200 && quotaArrotondata <= 1600) zoneConsigliate.push("Faggi Ovest");
+                    if (quotaArrotondata >= 1300 && quotaArrotondata <= 1600) zoneConsigliate.push("Abeti Nord");
+                    
+                    consiglio = introSenescenza + `🎯 <b>Il Mirino Altitudinale:</b> L'onda termica sta risalendo i versanti. Oggi taglia la montagna mantenendoti rigorosamente intorno a quota <b>${quotaArrotondata} metri</b>.<br><br>`;
+                    consiglio += `🌲 <b>Zone in target:</b> ${zoneConsigliate.join(", ")}.<br>`;
+                    
+                    // Tocco analitico finale per chiudere il consiglio
+                    if (quotaArrotondata < 1200) consiglio += "<i>Le faggete sono ancora in incubazione, rimani nei boschi di betulla!</i>";
+                    else if (quotaArrotondata >= 1450) consiglio += "<i>Le quote medie iniziano a scaricarsi, esplora le faggete alte e i primi abeti!</i>";
+                    else consiglio += "<i>Fase di transizione perfetta: betulle alte o faggete basse.</i>";
+                }
             }
-            
-// --- CALCOLO DINAMICO DELL'ONDA ALTITUDINALE ---
-            if (ggDaEvento !== null && ggDaEvento >= 5 && !isSenescenzaAttiva && tmin >= 6) {
-                
-                // La formula: parte da 1440m al giorno 6 e scende di 40 metri al giorno
-                let quotaDinamica = 1440 - ((ggDaEvento - 6) * 40);
-                
-                // Mettiamo dei "paletti" fisici per non far uscire l'onda dalla tua montagna
-                if (quotaDinamica > 1550) quotaDinamica = 1550;
-                if (quotaDinamica < 700) quotaDinamica = 700;
-                
-                // Arrotondiamo ai 50 metri più vicini (es. 1200m, 1250m) per renderlo leggibile
-                let quotaArrotondata = Math.round(quotaDinamica / 50) * 50;
-                
-                // Aggiungiamo il mirino al consiglio del giorno
-                consiglio += `<br><br>🎯 <b>Il Mirino Altitudinale:</b> L'onda termica si sta muovendo. Oggi ti consiglio di tagliare il versante "in costa", mantenendoti rigorosamente intorno a quota <b>${quotaArrotondata} metri</b>.`;
-            }
- 
+//fino qui 
             document.getElementById('consiglio-text').innerHTML = consiglio;
 
             const zc = document.getElementById('zone-container');
