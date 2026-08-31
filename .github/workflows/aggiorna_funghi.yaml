@@ -1,4 +1,4 @@
-name: Aggiornamento Previsioni Funghi
+name: Aggiornamento Previsioni Funghi beta
 
 on:
   schedule:
